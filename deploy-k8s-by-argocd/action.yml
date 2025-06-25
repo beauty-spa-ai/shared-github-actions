@@ -1,0 +1,75 @@
+name: Deploy application to k8s via argocd
+inputs:
+  image_name:
+    required: true
+    type: string
+  image_tag:
+    default: latest
+    type: string
+    required: true
+  env:
+    default: dev
+    type: string
+    required: false
+  app_name:
+    type: string
+    required: true
+  argocd_project:
+    type: string
+    required: true
+  github_org:
+    type: string
+    required: false
+    default: sota-labs
+  gitops_repo:
+    type: string
+    required: true
+  gitops_path:
+    type: string
+    required: true
+  argocd_host:
+    required: false
+    default: argocd-server.argocd
+    type: string
+  argocd_token:
+    required: true
+    type: string
+  ssh_private_key:
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: "deploy with argocd"
+      shell: bash
+      run: |
+        echo "Trigger deploy $ARGOCD_PROJECT.$APP_NAME.$ENV"
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 700 ~/.ssh
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+        mkdir -p /tmp/$GITHUB_RUN_ID
+        git clone git@github.com:$GITOPS_ORG/$GITOPS_REPO.git /tmp/$GITHUB_RUN_ID/$GITOPS_REPO
+        cd /tmp/$GITHUB_RUN_ID/$GITOPS_REPO/$GITOPS_PATH
+        kustomize edit set image $IMAGE_NAME:$IMAGE_TAG
+        git add --all
+        git config --global user.email "argocd-bot@sotatek.com"
+        git config --global user.name "gitops-bot"
+        git commit -m "$GITHUB_ACTOR deploy image $IMAGE_NAME:$IMAGE_TAG to $APP_NAME $ENV" || true
+        git push origin HEAD || true      
+        argocd app sync $ARGOCD_PROJECT.$APP_NAME.$ENV --http-retry-max 5 --server $ARGOCD_HOST --insecure --auth-token $ARGOCD_TOKEN
+        argocd app wait $ARGOCD_PROJECT.$APP_NAME.$ENV --http-retry-max 5 --server $ARGOCD_HOST --insecure --timeout 300 --auth-token $ARGOCD_TOKEN
+      env:
+        ARGOCD_HOST: ${{ inputs.argocd_host }}
+        ARGOCD_TOKEN: ${{ inputs.argocd_token }}
+        SSH_PRIVATE_KEY: ${{ inputs.ssh_private_key }}
+        ENV: ${{ inputs.env }}
+        IMAGE_NAME: ${{ inputs.image_name }}
+        IMAGE_TAG: ${{ inputs.image_tag }}
+        APP_NAME: ${{ inputs.app_name }}
+        ARGOCD_PROJECT: ${{ inputs.argocd_project }}
+        GITOPS_PATH: ${{ inputs.gitops_path }}
+        GITOPS_REPO: ${{ inputs.gitops_repo }}
+        GITOPS_ORG: ${{ inputs.github_org }}
