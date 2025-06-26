@@ -61,8 +61,8 @@ runs:
         git commit -m "$GITHUB_ACTOR deploy image $IMAGE_NAME:$IMAGE_TAG to $APP_NAME $ENV" || true
         git push origin HEAD || true
         echo "ArgoCD host: $ARGOCD_HOST"      
-        argocd app sync $ARGOCD_PROJECT.$APP_NAME.$ENV --http-retry-max 5 --server $ARGOCD_HOST --insecure --auth-token $ARGOCD_TOKEN
-        argocd app wait $ARGOCD_PROJECT.$APP_NAME.$ENV --http-retry-max 5 --server $ARGOCD_HOST --insecure --timeout 300 --auth-token $ARGOCD_TOKEN
+        argocd app sync $ARGOCD_PROJECT.$APP_NAME.$ENV --http-retry-max 5 --server $ARGOCD_HOST --insecure --grpc-web --auth-token $ARGOCD_TOKEN
+        argocd app wait $ARGOCD_PROJECT.$APP_NAME.$ENV --http-retry-max 5 --server $ARGOCD_HOST --insecure --grpc-web --timeout 300 --auth-token $ARGOCD_TOKEN
       env:
         ARGOCD_HOST: ${{ inputs.argocd_host }}
         ARGOCD_TOKEN: ${{ inputs.argocd_token }}
