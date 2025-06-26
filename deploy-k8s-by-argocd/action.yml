@@ -51,6 +51,7 @@ runs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H github.com >> ~/.ssh/known_hosts
         mkdir -p /tmp/$GITHUB_RUN_ID
+        rm -rf /tmp/$GITHUB_RUN_ID/$GITOPS_REPO
         git clone git@github.com:$GITOPS_ORG/$GITOPS_REPO.git /tmp/$GITHUB_RUN_ID/$GITOPS_REPO
         cd /tmp/$GITHUB_RUN_ID/$GITOPS_REPO/$GITOPS_PATH
         kustomize edit set image $IMAGE_NAME:$IMAGE_TAG
@@ -58,7 +59,8 @@ runs:
         git config --global user.email "argocd-bot@gmail.com"
         git config --global user.name "gitops-bot"
         git commit -m "$GITHUB_ACTOR deploy image $IMAGE_NAME:$IMAGE_TAG to $APP_NAME $ENV" || true
-        git push origin HEAD || true      
+        git push origin HEAD || true
+        echo "ArgoCD host: $ARGOCD_HOST"      
         argocd app sync $ARGOCD_PROJECT.$APP_NAME.$ENV --http-retry-max 5 --server $ARGOCD_HOST --insecure --auth-token $ARGOCD_TOKEN
         argocd app wait $ARGOCD_PROJECT.$APP_NAME.$ENV --http-retry-max 5 --server $ARGOCD_HOST --insecure --timeout 300 --auth-token $ARGOCD_TOKEN
       env:
