@@ -20,7 +20,7 @@ inputs:
   github_org:
     type: string
     required: false
-    default: sota-labs
+    default:  beauty-spa-ai
   gitops_repo:
     type: string
     required: true
@@ -55,7 +55,7 @@ runs:
         cd /tmp/$GITHUB_RUN_ID/$GITOPS_REPO/$GITOPS_PATH
         kustomize edit set image $IMAGE_NAME:$IMAGE_TAG
         git add --all
-        git config --global user.email "argocd-bot@sotatek.com"
+        git config --global user.email "argocd-bot@gmail.com"
         git config --global user.name "gitops-bot"
         git commit -m "$GITHUB_ACTOR deploy image $IMAGE_NAME:$IMAGE_TAG to $APP_NAME $ENV" || true
         git push origin HEAD || true      
